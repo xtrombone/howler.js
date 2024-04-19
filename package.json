@@ -16,7 +16,7 @@
     "audio sprite",
     "audiosprite"
   ],
-  "author": "James Simpson <james@goldfirestudios.com> (http://goldfirestudios.com)",
+  "author": "@catalogworks",
   "repository": {
     "type": "git",
     "url": "git://github.com/catalogworks/howler.js.git"
@@ -37,5 +37,8 @@
     "dist/howler.core.min.js",
     "dist/howler.spatial.min.js",
     "LICENSE.md"
-  ]
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }
