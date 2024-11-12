@@ -1,5 +1,5 @@
 /*!
- *  howler.js v2.2.6
+ *  howler.js v2.2.7
  *  howlerjs.com
  *
  *  (c) 2013-2020, James Simpson of GoldFire Studios
@@ -523,7 +523,7 @@
       if (self.state === 'running' && self.ctx.state !== 'interrupted' && self._suspendTimer) {
         clearTimeout(self._suspendTimer);
         self._suspendTimer = null;
-      } else if (self.state === 'suspended' || self.state === 'running' && self.ctx.state === 'interrupted') {
+      } else if (self.state === 'suspended' || self.state === 'running' && (self.ctx.state === 'interrupted' || self.ctx.state === 'suspended')) {
         self.ctx.resume().then(function() {
           self.state = 'running';
 
@@ -2622,7 +2622,7 @@
 /*!
  *  Spatial Plugin - Adds support for stereo and 3D audio where Web Audio is supported.
  *  
- *  howler.js v2.2.6
+ *  howler.js v2.2.7
  *  howlerjs.com
  *
  *  (c) 2013-2020, James Simpson of GoldFire Studios
