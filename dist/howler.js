@@ -1,5 +1,5 @@
 /*!
- *  howler.js v2.2.4
+ *  howler.js v2.2.6
  *  howlerjs.com
  *
  *  (c) 2013-2020, James Simpson of GoldFire Studios
@@ -359,7 +359,9 @@
 
               if (sound && sound._node && !sound._node._unlocked) {
                 sound._node._unlocked = true;
+                var currentTime = sound._node.currentTime;
                 sound._node.load();
+                sound._node.currentTime = currentTime;
               }
             }
           }
@@ -992,6 +994,12 @@
             node.removeEventListener(Howler._canPlayEvent, listener, false);
           };
           node.addEventListener(Howler._canPlayEvent, listener, false);
+
+          // (IOS 17.4 PATCH) 
+          // the node is not actually playing (has received suspend event and NETWORK_IDLE)
+          if (node.networkState === 1 && node._wasSuspended) {
+            node.play();
+          }
 
           // Cancel the end timer.
           self._clearTimer(sound._id);
@@ -1763,6 +1771,10 @@
           // Remove any event listeners.
           sounds[i]._node.removeEventListener('error', sounds[i]._errorFn, false);
           sounds[i]._node.removeEventListener(Howler._canPlayEvent, sounds[i]._loadFn, false);
+          // IOS17.4 PATCH
+          sounds[i]._node.removeEventListener('loadedmetadata', sounds[i]._loadFn, false);
+          sounds[i]._node.removeEventListener('suspend', setAudioNodeWasSuspendedFromEvent, false);
+
           sounds[i]._node.removeEventListener('ended', sounds[i]._endFn, false);
 
           // Release the Audio object back to the pool.
@@ -2264,6 +2276,12 @@
         self._loadFn = self._loadListener.bind(self);
         self._node.addEventListener(Howler._canPlayEvent, self._loadFn, false);
 
+        // IOS17.4 PATCH
+        // cancplaythrough may not fire if the audio node is suspended
+        // ensure event queue is started here
+        // may have side effects beyond the _wasSuspended 
+        self._node.addEventListener('loadedmetadata', self._loadFn, false);
+
         // Listen for the 'ended' event on the sound to account for edge-case where
         // a finite sound has a duration of Infinity.
         self._endFn = self._endListener.bind(self);
@@ -2273,6 +2291,12 @@
         self._node.src = parent._src;
         self._node.preload = parent._preload === true ? 'auto' : parent._preload;
         self._node.volume = volume * Howler.volume();
+
+        // IOS 17.4 PATCH
+        // record suspended event with dirty param for later mitigation
+        self._node._wasSuspended = false;
+        self._node.addEventListener('suspend', setAudioNodeWasSuspendedFromEvent, false);
+
 
         // Begin loading the source.
         self._node.load();
@@ -2340,8 +2364,10 @@
         parent._loadQueue();
       }
 
-      // Clear the event listener.
+      // Clear the event listener(s).
+      // IOS 17.4 PATCH
       self._node.removeEventListener(Howler._canPlayEvent, self._loadFn, false);
+      self._node.removeEventListener('loadedmetadata', self._loadFn, false);
     },
 
     /**
@@ -2506,6 +2532,12 @@
     }
   };
 
+
+  // IOS17.4 PATCH
+  var setAudioNodeWasSuspendedFromEvent = function(event) {
+    event.target._wasSuspended = true;
+  }
+
   /**
    * Setup the audio context when available, or switch to HTML5 Audio mode.
    */
@@ -2590,7 +2622,7 @@
 /*!
  *  Spatial Plugin - Adds support for stereo and 3D audio where Web Audio is supported.
  *  
- *  howler.js v2.2.4
+ *  howler.js v2.2.6
  *  howlerjs.com
  *
  *  (c) 2013-2020, James Simpson of GoldFire Studios
